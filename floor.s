@@ -1,19 +1,23 @@
 include "64cube.inc"            ; Include 64cube headers
 
 ENUM $0                         ; Enum values as bytes starting at $0000
-  ready       rBYTE 1           ; bool: If true, activates Main loop
-  flr_l       rBYTE 1
-  flr_h       rBYTE 1           ; Addresses to source of floor graphics
-  flr_wide    rBYTE 1
-  flr_high    rBYTE 1           ; Width/height of the floor sprite to be drawn
-  dude_x      rBYTE 1
-  dude_y      rBYTE 1           ; Position of "dude" on screen
-  dst_l       rBYTE 1
-  dst_h       rBYTE 1
-  temp        rBYTE 1
-  frames      rBYTE 1
-  fcount      rBYTE 1
-  counter     rBYTE 1
+  ready         rBYTE 1         ; bool: If true, activates Main loop
+  flr_l         rBYTE 1
+  flr_h         rBYTE 1         ; Addresses to source of floor graphics
+  flr_wide      rBYTE 1
+  flr_high      rBYTE 1         ; Width/height of the floor sprite to be drawn
+  dude_x        rBYTE 1
+  dude_y        rBYTE 1         ; Position of "dude" on screen
+  dude_wide     rBYTE 1
+  dude_high     rBYTE 1         ; Width/height of the dude
+  dude_bound_x  rBYTE 1
+  dude_bound_y  rBYTE 1         ; Bounds for traversal of the dude
+  dst_l         rBYTE 1
+  dst_h         rBYTE 1
+  temp          rBYTE 1
+  frames        rBYTE 1
+  fcount        rBYTE 1
+  counter       rBYTE 1
 ENDE
 
 
@@ -29,11 +33,26 @@ Boot:
   lda #$5
   sta COLORS                    ; Set address for COLORS to $5000
 
+  _setb 64,flr_wide             ; Set 'flr_wide' to 64, full width of the screen
+  _setb 19,flr_high             ; Set 'flr_high' to 10
+
   lda #$20
   sta dude_x
   lda #$20
   sta dude_y                    ; Set dude_x and dude_y starting position to
                                 ;   the center of the screen
+  _setb 1,dude_wide
+  _setb 1,dude_high             ; Set 'dude_wide' and 'dude_high' to one pixel
+
+  sec
+  lda #64
+  sbc dude_wide
+  sta dude_bound_x
+  sec
+  lda #64
+  sbc dude_high
+  sta dude_bound_y              ; Set 'dude_bounds' to screen dimensions minus
+                                ;   the size of the dude
 
   _setw IRQ, VBLANK_IRQ         ; Set address to IRQ in VBLANK_IRQ
   cli                           ; Clear interrupt
@@ -44,9 +63,6 @@ Main:
   beq Main                      ;   Go to Main
                                 ; Else,
   jsr Clear                     ;   Jump to subroutine 'Clear'
-
-  _setb 64,flr_wide             ; Set 'flr_wide' to 64, full width of the screen
-  _setb 19,flr_high             ; Set 'flr_high' to 10
 
   ldx fcount                    ; Load 'fcount' into X
 
@@ -84,6 +100,53 @@ IRQ:
   ; Check if player is pushing a direction
   ; If so,
   ;   Adjust the dude position
+
+  UP:
+    lda INPUT
+    and #%00010000
+    beq NoUP
+    lda dude_y
+    beq NoUP
+    dec dude_y
+  NoUP:
+
+  DN:
+    lda INPUT
+    and #%00100000
+    beq NoDN
+    lda dude_y
+    cmp dude_bound_y
+    beq NoDN
+    inc dude_y
+  NoDN:
+
+  LT:
+    lda INPUT
+    and #%01000000
+    beq NoLT
+    lda dude_x
+    beq NoRT
+    dec dude_x
+  NoLT:
+
+  RT:
+    lda INPUT
+    and #%10000000
+    beq NoRT
+    lda dude_x
+    cmp dude_bound_x
+    beq NoRT
+    inc dude_x
+  NoRT:
+
+  Other:
+    lda INPUT
+    and #%00001111
+    beq NoOther
+    lda #64-36
+    sta dude_x
+    sta dude_y
+  NoOther:
 
 Timer:
   lda counter
