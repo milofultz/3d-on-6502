@@ -41,7 +41,7 @@ Boot:
   lda #$20
   sta dude_y                    ; Set dude_x and dude_y starting position to
                                 ;   the center of the screen
-  _setb 1,dude_wide
+  _setb 3,dude_wide
   _setb 1,dude_high             ; Set 'dude_wide' and 'dude_high' to one pixel
 
   sec
@@ -71,18 +71,14 @@ Main:
   lda SpriteHiPtr,x
   sta flr_h                     ; Store sum of 'SpriteHiPtr' and X in 'flr_h'
 
-  lda #%01000000
-  sta dst_l
-  lda #%11111011
-  sta dst_h                     ; Set the starting position to draw the floor,
-                                ;   where every 64 bits is one row. This starts
-                                ;   at $fb40, meaning row 45 ($bf0 / 64) and
-                                ;   column 0 ($b40 % 64).
+  lda #%01000000                ; Set the starting position to draw the floor,
+  sta dst_l                     ;   where every 64 bits is one row. This starts
+  lda #%11111011                ;   at $fb40, meaning row 45 ($bf0 / 64) and
+  sta dst_h                     ;   column 0 ($b40 % 64).
 
   jsr DrawFloor                 ; Draw the floor at the given destination
 
-  ; Draw red pixel
-  jsr DrawDude
+  jsr DrawDude                  ; Draw the dude
 
   lda #0
   sta ready                     ; Set 'ready' to 0 (false)
@@ -218,8 +214,13 @@ DrawDude:
     sta dst_l                   ; Store the number as the low pointer
 
     ldy #0
+  -
     lda #$02                    ; Store the third color in the palette at the
     sta (dst_l),y               ;   dst pointer.
+    iny
+    cpy dude_wide
+    bne -
+
   rts
 
 
