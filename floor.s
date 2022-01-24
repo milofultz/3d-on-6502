@@ -6,6 +6,8 @@ ENUM $0                         ; Enum values as bytes starting at $0000
   flr_h         rBYTE 1         ; Addresses to source of floor graphics
   flr_wide      rBYTE 1
   flr_high      rBYTE 1         ; Width/height of the floor sprite to be drawn
+  dude_l        rBYTE 1
+  dude_h        rBYTE 1         ; Addresses to source of dude graphics
   dude_x        rBYTE 1
   dude_y        rBYTE 1         ; Position of "dude" on screen
   dude_wide     rBYTE 1
@@ -36,13 +38,25 @@ Boot:
   _setb 64,flr_wide             ; Set 'flr_wide' to 64, full width of the screen
   _setb 19,flr_high             ; Set 'flr_high' to 10
 
-  lda #$20
+  _setb 8,dude_wide
+  _setb 8,dude_high             ; Set 'dude_wide' and 'dude_high'
+
+  clc
+  lda dude_wide
+  ror
+  sta temp
+  clc
+  lda #$21
+  sbc temp
   sta dude_x
-  lda #$20
-  sta dude_y                    ; Set dude_x and dude_y starting position to
-                                ;   the center of the screen
-  _setb 3,dude_wide
-  _setb 3,dude_high             ; Set 'dude_wide' and 'dude_high' to one pixel
+  clc
+  lda dude_high
+  ror
+  sta temp
+  clc
+  lda #$21
+  sbc temp                      ; Set dude_x and dude_y starting position to
+  sta dude_y                    ;   the center of the screen, using dimensions
 
   sec
   lda #64
@@ -50,9 +64,8 @@ Boot:
   sta dude_bound_x
   sec
   lda #64
-  sbc dude_high
-  sta dude_bound_y              ; Set 'dude_bounds' to screen dimensions minus
-                                ;   the size of the dude
+  sbc dude_high                 ; Set 'dude_bounds' to screen dimensions minus
+  sta dude_bound_y              ;   the size of the dude
 
   _setw IRQ, VBLANK_IRQ         ; Set address to IRQ in VBLANK_IRQ
   cli                           ; Clear interrupt
@@ -66,10 +79,15 @@ Main:
 
   ldx fcount                    ; Load 'fcount' into X
 
-  lda SpriteLoPtr,x
-  sta flr_l                     ; Store sum of 'SpriteLoPtr' and X in 'flr_l'
-  lda SpriteHiPtr,x
-  sta flr_h                     ; Store sum of 'SpriteHiPtr' and X in 'flr_h'
+  lda FloorSpriteLoPtr,x
+  sta flr_l                     ; STA sum of 'FloorSpriteLoPtr' and X in 'flr_l'
+  lda FloorSpriteHiPtr,x
+  sta flr_h                     ; STA sum of 'FloorSpriteHiPtr' and X in 'flr_h'
+
+  lda DudeSpriteLoPtr
+  sta dude_l                    ; STA sum of 'DudeSpriteLoPtr' and X in 'dude_l'
+  lda DudeSpriteHiPtr
+  sta dude_h                    ; STA sum of 'DudeSpriteHiPtr' and X in 'dude_h'
 
   lda #%01000000                ; Set the starting position to draw the floor,
   sta dst_l                     ;   where every 64 bits is one row. This starts
@@ -217,12 +235,15 @@ DrawDude:
   --
     ldy #0
   -
-    lda #$02                    ; Store the third color in the palette at the
-    sta (dst_l),y               ;   dst pointer.
+    lda (dude_l),y
+    sta (dst_l),y               ; Store the sprite's pixel at the dst pointer.
+
     iny
     cpy dude_wide
     bne -
 
+    _addwb dude_l,dude_wide,dude_l ; Add `dude_wide` to the dude sprite pointer
+                                ;   (go to the next 'row' within the sprite)
     _addwi dst_l,64,dst_l       ; Move destination pointer to next row on screen
 
     inx
@@ -264,7 +285,7 @@ Clear:
 palette:
   hex 000000 ffffff ff0000
 
-  SpriteLoPtr:
+  FloorSpriteLoPtr:
   db <(floor0)
   db <(floor1)
   db <(floor2)
@@ -272,13 +293,19 @@ palette:
   db <(floor4)
   db <(floor5)
 
-  SpriteHiPtr:
+  FloorSpriteHiPtr:
   db >(floor0)
   db >(floor1)
   db >(floor2)
   db >(floor3)
   db >(floor4)
   db >(floor5)
+
+  DudeSpriteLoPtr:
+  db <(dude)
+
+  DudeSpriteHiPtr:
+  db >(dude)
 
   org $a000
 
@@ -294,3 +321,12 @@ floor4:
   incbin "roms/3dworld/floor_4.raw"
 floor5:
   incbin "roms/3dworld/floor_5.raw"
+dude:
+  db $02,$02,$02,$02,$02,$02,$02,$02
+  db $02,$01,$01,$01,$01,$01,$01,$02
+  db $02,$01,$01,$00,$01,$00,$01,$02
+  db $02,$01,$01,$01,$00,$01,$01,$02
+  db $02,$01,$00,$01,$01,$00,$01,$02
+  db $02,$01,$01,$00,$00,$01,$01,$02
+  db $02,$01,$01,$01,$01,$01,$01,$02
+  db $02,$02,$02,$02,$02,$02,$02,$02
