@@ -42,7 +42,7 @@ Boot:
   sta dude_y                    ; Set dude_x and dude_y starting position to
                                 ;   the center of the screen
   _setb 3,dude_wide
-  _setb 1,dude_high             ; Set 'dude_wide' and 'dude_high' to one pixel
+  _setb 3,dude_high             ; Set 'dude_wide' and 'dude_high' to one pixel
 
   sec
   lda #64
@@ -213,6 +213,8 @@ DrawDude:
     adc dude_x                  ; Add the temp numbers above to dude_x value
     sta dst_l                   ; Store the number as the low pointer
 
+    ldx #0
+  --
     ldy #0
   -
     lda #$02                    ; Store the third color in the palette at the
@@ -220,6 +222,12 @@ DrawDude:
     iny
     cpy dude_wide
     bne -
+
+    _addwi dst_l,64,dst_l       ; Move destination pointer to next row on screen
+
+    inx
+    cpx dude_high
+    bne --
 
   rts
 
