@@ -130,39 +130,33 @@ DrawFloor:
   rts
 
 DrawDude:
-    ; Clear dst_l and dst_h and temp
     lda #0
     sta dst_l
     sta dst_h
-    sta temp
+    sta temp                    ; Clear variables
 
     ; Set dude position and store in dst_l and dst_h
-      ; Set dst_h, by multiplying dude_y by 64 (to match row)
-        ; Rotate dude_y to the right by two ((256 / 2) / 2 === 64)
     clc
     lda dude_y
+    ror                         ; Set dst_h, by multiplying dude_y by 64 (to
+                                ;   match row) Rotate dude_y to the right by
+                                ;   two. ((256 / 2) / 2 === 64)
+    ror temp                    ; Put the numbers rotated out above into a temp
+                                ;   to eventually be used added to dst_l
     ror
     ror temp
-    ror
-    ror temp
-        ; OR dude_y with $f0
-    ora #$f0
-        ; Store this in dst_h
-    sta dst_h
-      ; Set dst_l
-        ; Put the numbers rotated out above into a temp variable
-        ; Add dude_x to temp variable
+
+    ora #$f0                    ; Put on the VIDEO page ($f0)
+    sta dst_h                   ; Store the number as the high pointer
+
     clc
     lda temp
-    adc dude_x
-        ; Store temp in dst_l
-    ;lda #$20
-    sta dst_l
+    adc dude_x                  ; Add the temp numbers above to dude_x value
+    sta dst_l                   ; Store the number as the low pointer
 
-    ; Store a value of #$02 at that position
     ldy #0
-    lda #$02
-    sta (dst_l),y
+    lda #$02                    ; Store the third color in the palette at the
+    sta (dst_l),y               ;   dst pointer.
   rts
 
 
