@@ -130,10 +130,11 @@ DrawFloor:
   rts
 
 DrawDude:
-    ; Clear dst_l and dst_h
+    ; Clear dst_l and dst_h and temp
     lda #0
     sta dst_l
     sta dst_h
+    sta temp
 
     ; Set dude position and store in dst_l and dst_h
       ; Set dst_h, by multiplying dude_y by 64 (to match row)
@@ -141,7 +142,9 @@ DrawDude:
     clc
     lda dude_y
     ror
+    ror temp
     ror
+    ror temp
         ; OR dude_y with $f0
     ora #$f0
         ; Store this in dst_h
@@ -149,8 +152,11 @@ DrawDude:
       ; Set dst_l
         ; Put the numbers rotated out above into a temp variable
         ; Add dude_x to temp variable
+    clc
+    lda temp
+    adc dude_x
         ; Store temp in dst_l
-    lda #$20
+    ;lda #$20
     sta dst_l
 
     ; Store a value of #$02 at that position
