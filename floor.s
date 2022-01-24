@@ -2,13 +2,12 @@ include "64cube.inc"            ; Include 64cube headers
 
 ENUM $0                         ; Enum values as bytes starting at $0000
   ready       rBYTE 1           ; bool: If true, activates Main loop
-  src_l       rBYTE 1
-  src_h       rBYTE 1           ; Addresses to source of frame graphics
-  wide        rBYTE 1
-  high        rBYTE 1           ; Width/height of the sprite to be drawn
-  mask        rBYTE 1
-  xpos        rBYTE 1
-  ypos        rBYTE 1
+  flr_l       rBYTE 1
+  flr_h       rBYTE 1           ; Addresses to source of floor graphics
+  flr_wide    rBYTE 1
+  flr_high    rBYTE 1           ; Width/height of the floor sprite to be drawn
+  dude_x      rBYTE 1
+  dude_y      rBYTE 1           ; Position of "dude" on screen
   dst_l       rBYTE 1
   dst_h       rBYTE 1
   temp        rBYTE 1
@@ -30,10 +29,11 @@ Boot:
   lda #$5
   sta COLORS                    ; Set address for COLORS to $5000
 
-  lda #0
-  sta xpos
-  lda #64-21
-  sta ypos                      ; Set xpos and ypos to 28
+  lda #$20
+  sta dude_x
+  lda #$20
+  sta dude_y                    ; Set dude_x and dude_y starting position to
+                                ;   the center of the screen
 
   _setw IRQ, VBLANK_IRQ         ; Set address to IRQ in VBLANK_IRQ
   cli                           ; Clear interrupt
@@ -45,25 +45,28 @@ Main:
                                 ; Else,
   jsr Clear                     ;   Jump to subroutine 'Clear'
 
-  _setb 64,wide                 ; Set 'wide' to 64, full width of the screen
-  _setb 19,high                 ; Set 'high' to 10
+  _setb 64,flr_wide             ; Set 'flr_wide' to 64, full width of the screen
+  _setb 19,flr_high             ; Set 'flr_high' to 10
 
   ldx fcount                    ; Load 'fcount' into X
 
   lda SpriteLoPtr,x
-  sta src_l                     ; Store sum of 'SpriteLoPtr' and X in 'src_l'
+  sta flr_l                     ; Store sum of 'SpriteLoPtr' and X in 'flr_l'
   lda SpriteHiPtr,x
-  sta src_h                     ; Store sum of 'SpriteHiPtr' and X in 'src_h'
+  sta flr_h                     ; Store sum of 'SpriteHiPtr' and X in 'flr_h'
 
   lda #%01000000
   sta dst_l
   lda #%11111011
-  sta dst_h                     ; Set the starting position to draw the sprite,
+  sta dst_h                     ; Set the starting position to draw the floor,
                                 ;   where every 64 bits is one row. This starts
                                 ;   at $fb40, meaning row 45 ($bf0 / 64) and
                                 ;   column 0 ($b40 % 64).
 
-  jsr Draw                      ; Draw the sprite at the given destination
+  jsr DrawFloor                 ; Draw the floor at the given destination
+
+  ; Draw red pixel
+  jsr DrawDude
 
   lda #0
   sta ready                     ; Set 'ready' to 0 (false)
@@ -77,6 +80,10 @@ Main:
 IRQ:
   lda #1
   sta ready                     ; Set 'ready' to 1 (true)
+
+  ; Check if player is pushing a direction
+  ; If so,
+  ;   Adjust the dude position
 
 Timer:
   lda counter
@@ -97,7 +104,7 @@ Timer:
   rti                           ; Return from interrupt
 
 
-Draw:
+DrawFloor:
   ; X: Current position of sprite column pointer
   ; Y: Current position of sprite row pointer
 
@@ -105,21 +112,45 @@ Draw:
   -
     ldy #$00
   --
-    lda (src_l),y               ; Load current pixel into the accumulator
+    lda (flr_l),y               ; Load current floor pixel into the accumulator
     sta (dst_l),y               ; Store current pixel in destination pixel
 
     iny                         ; Increment column pointer
-    cpy wide                    ; If column pointer matches the width of
-                                ;     the sprite,
+    cpy flr_wide                ; If column pointer matches the width of
+                                ;     the floor sprite,
     bne --                      ;   Draw the next column
                                 ; Else,
-    _addwb src_l,wide,src_l     ; Add `wide` to the sprite's pointer (go to the
-                                ;   next 'row' within the sprite)
+    _addwb flr_l,flr_wide,flr_l ; Add `flr_wide` to the floor sprite's pointer
+                                ;   (go to the next 'row' within the sprite)
     _addwi dst_l,64,dst_l       ; Move destination pointer to next row on screen
 
     inx                         ; Increment current height
-    cpx high                    ; If current height is not desired height,
+    cpx flr_high                ; If current height is not desired height,
     bne -                       ;   Draw next row of sprite
+  rts
+
+DrawDude:
+    ; Clear dest_l and dest_h
+
+    ; Set dude position and store in dst_l and dst_h
+      ; Set dst_h
+        ; Multiply dude_y by 64 (to match row)
+        ; Rotate dude_y to the right by three
+        ; And dude_y with $f0
+        ; Store this in dst_h
+    lda #$f8
+    sta dst_h
+      ; Set dst_l
+        ; Put the numbers rotated out above into a temp variable
+        ; Add dude_x to temp variable
+        ; Store temp in dst_l
+    lda #$20
+    sta dst_l
+
+    ; Store a value of #$02 at that position
+    ldy #0
+    lda #$02
+    sta (dst_l),y
   rts
 
 
@@ -153,7 +184,7 @@ Clear:
   org $0500
 
 palette:
-  hex 000000 ffffff
+  hex 000000 ffffff ff0000
 
   SpriteLoPtr:
   db <(floor0)
