@@ -55,11 +55,15 @@ Main:
   lda SpriteHiPtr,x
   sta src_h                     ; Store sum of 'SpriteHiPtr' and X in 'src_h'
 
-  lda #%00000000
+  lda #%01000000
   sta dst_l
-  lda #%11110111
-  sta dst_h
-  jsr Draw                      ; Jump to subroutine 'Draw'
+  lda #%11111011
+  sta dst_h                     ; Set the starting position to draw the sprite,
+                                ;   where every 64 bits is one row. This starts
+                                ;   at $fb40, meaning row 45 ($bf0 / 64) and
+                                ;   column 0 ($b40 % 64).
+
+  jsr Draw                      ; Draw the sprite at the given destination
 
   lda #0
   sta ready                     ; Set 'ready' to 0 (false)
@@ -94,6 +98,9 @@ Timer:
 
 
 Draw:
+  ; X: Current position of sprite column pointer
+  ; Y: Current position of sprite row pointer
+
     ldx #$00
   -
     ldy #$00
@@ -103,28 +110,41 @@ Draw:
 
     iny                         ; Increment column pointer
     cpy wide                    ; If column pointer matches the width of
-                                ;   the sprite,
-    bne --                      ; Continue to the next column and repeat
+                                ;     the sprite,
+    bne --                      ;   Draw the next column
                                 ; Else,
     _addwb src_l,wide,src_l     ; Add `wide` to the sprite's pointer (go to the
                                 ;   next 'row' within the sprite)
-    _addwi dst_l,$3f,dst_l       ; Add 64 to the
-    inx
-    cpx high
-    bne -
+    _addwi dst_l,64,dst_l       ; Move destination pointer to next row on screen
+
+    inx                         ; Increment current height
+    cpx high                    ; If current height is not desired height,
+    bne -                       ;   Draw next row of sprite
   rts
 
 
 Clear:
+  ; Clear whole video page to prepare for redraw
+
     ldx #0
   -
     lsr
+    sta $f000,x
+    sta $f100,x
+    sta $f200,x
+    sta $f300,x
+    sta $f400,x
+    sta $f500,x
+    sta $f600,x
     sta $f700,x
     sta $f800,x
     sta $f900,x
     sta $fa00,x
     sta $fb00,x
     sta $fc00,x
+    sta $fd00,x
+    sta $fe00,x
+    sta $ff00,x
     dex
     bne -
   rts
