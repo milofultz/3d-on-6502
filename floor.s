@@ -169,10 +169,10 @@ Timer:
   inc fcount                    ; Else, increment 'fcount'
   lda fcount
   cmp #6                        ; If 'fcount' !== 6,
-  bne +++                       ;   Go to nearest '+++' label
+  bne ++                        ;   Go to nearest '++' label
   lda #0                        ; Else,
   sta fcount                    ;   Set 'fcount' to 0
-+++
+++
   lda #0
   sta counter                   ; Set 'counter' to 0
 +
@@ -256,10 +256,10 @@ DrawDude:
 Clear:
   ; Clear whole video page to prepare for redraw
 
+    lda #0
     ldx #0
   -
-    lsr
-    sta $f000,x
+    sta $f000,x                 ; Paint the sky color at top of screen
     sta $f100,x
     sta $f200,x
     sta $f300,x
@@ -270,12 +270,15 @@ Clear:
     sta $f800,x
     sta $f900,x
     sta $fa00,x
-    sta $fb00,x
-    sta $fc00,x
-    sta $fd00,x
-    sta $fe00,x
-    sta $ff00,x
     dex
+    bne -
+
+    lda #3
+    ldx #$40
+  -
+    sta $fb00,x                 ; Paint the line right above the floor
+    dex
+    cpx #$ff
     bne -
   rts
 
@@ -283,7 +286,7 @@ Clear:
   org $0500
 
 palette:
-  hex 000000 ffffff ff0000
+  hex 000000 00A619 008013 004800
 
   FloorSpriteLoPtr:
   db <(floor0)
