@@ -1,0 +1,16 @@
+f: nil
+0: black
+1: dark gray
+2: light gray
+3: orange
+4: yellow
+5: blue
+
+f 1 f 1 1 f 1 f
+f f 1 5 5 1 f f
+f 1 0 0 0 0 1 f
+0 0 2 3 4 2 0 0
+0 2 3 4 3 4 2 0
+f 0 0 3 4 0 0 f
+f f f 0 0 f f f
+f f f f f f f f

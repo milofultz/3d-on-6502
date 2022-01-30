@@ -236,8 +236,10 @@ DrawDude:
     ldy #0
   -
     lda (dude_l),y
+    cmp #$ff
+    beq +
     sta (dst_l),y               ; Store the sprite's pixel at the dst pointer.
-
+  +
     iny
     cpy dude_wide
     bne -
@@ -286,7 +288,12 @@ Clear:
   org $0500
 
 palette:
+  ;   Env Colors: 00-03
+  ;   Black  lGreen Green  dGreen
   hex 000000 00A619 008013 004800
+  ;   Ship colors: 04-09
+  ;   Gray   dGray  Orange Yellow lBlue  lGray
+  hex b0b0b0 666666 ff6c00 ffdb00 92cdff 404040
 
   FloorSpriteLoPtr:
   db <(floor0)
@@ -325,11 +332,4 @@ floor4:
 floor5:
   incbin "roms/3dworld/floor_5.raw"
 dude:
-  db $02,$02,$02,$02,$02,$02,$02,$02
-  db $02,$01,$01,$01,$01,$01,$01,$02
-  db $02,$01,$01,$00,$01,$00,$01,$02
-  db $02,$01,$01,$01,$00,$01,$01,$02
-  db $02,$01,$00,$01,$01,$00,$01,$02
-  db $02,$01,$01,$00,$00,$01,$01,$02
-  db $02,$01,$01,$01,$01,$01,$01,$02
-  db $02,$02,$02,$02,$02,$02,$02,$02
+  incbin "roms/3dworld/ship11.raw"
