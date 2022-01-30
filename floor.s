@@ -84,11 +84,23 @@ Main:
   lda FloorSpriteHiPtr,x
   sta flr_h                     ; STA sum of 'FloorSpriteHiPtr' and X in 'flr_h'
 
-  lda DudeSpriteLoPtr
-  sta dude_l                    ; STA sum of 'DudeSpriteLoPtr' and X in 'dude_l'
-  lda DudeSpriteHiPtr
-  sta dude_h                    ; STA sum of 'DudeSpriteHiPtr' and X in 'dude_h'
+  sec
+  lda dude_y
+  cmp #40
+  bcs +
 
+  lda DudeMSprLoPtr
+  sta dude_l                    ; STA sum of 'DudeMSprLoPtr' and X in 'dude_l'
+  lda DudeMSprHiPtr
+  sta dude_h                    ; STA sum of 'DudeMSprHiPtr' and X in 'dude_h'
+  jmp ++
++
+  lda DudeLSprLoPtr
+  sta dude_l                    ; STA sum of 'DudeLSprLoPtr' and X in 'dude_l'
+  lda DudeLSprHiPtr
+  sta dude_h                    ; STA sum of 'DudeLSprHiPtr' and X in 'dude_h'
+
+++
   lda #%01000000                ; Set the starting position to draw the floor,
   sta dst_l                     ;   where every 64 bits is one row. This starts
   lda #%11111011                ;   at $fb40, meaning row 45 ($bf0 / 64) and
@@ -311,11 +323,17 @@ palette:
   db >(floor4)
   db >(floor5)
 
-  DudeSpriteLoPtr:
-  db <(dude)
+  DudeMSprLoPtr:
+  db <(dude_mid)
 
-  DudeSpriteHiPtr:
-  db >(dude)
+  DudeMSprHiPtr:
+  db >(dude_mid)
+
+  DudeLSprLoPtr:
+  db <(dude_low)
+
+  DudeLSprHiPtr:
+  db >(dude_low)
 
   org $a000
 
@@ -331,5 +349,7 @@ floor4:
   incbin "roms/3dworld/floor_4.raw"
 floor5:
   incbin "roms/3dworld/floor_5.raw"
-dude:
+dude_mid:
   incbin "roms/3dworld/ship11.raw"
+dude_low:
+  incbin "roms/3dworld/ship21.raw"
