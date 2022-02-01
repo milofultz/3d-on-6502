@@ -108,7 +108,7 @@ Draw:
                                 ; Else,
     _addwb src_l,wide,src_l     ; Add `wide` to the sprite's pointer (go to the
                                 ;   next 'row' within the sprite)
-    _addwi dst_l,$3f,dst_l       ; Add 64 to the
+    _addwi dst_l,$40,dst_l       ; Add 64 to the
     inx
     cpx high
     bne -
